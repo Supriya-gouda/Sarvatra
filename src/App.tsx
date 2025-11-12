@@ -1,0 +1,65 @@
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Header } from "./components/layouts/Header";
+import { Footer } from "./components/layouts/Footer";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import CitizenReport from "./pages/CitizenReport";
+import CitizenAlerts from "./pages/CitizenAlerts";
+import AuthorityDashboard from "./pages/AuthorityDashboard";
+import PublicMap from "./pages/PublicMap";
+import RiskGauge from "./pages/RiskGauge";
+import About from "./pages/About";
+import FAQ from "./pages/FAQ";
+import NotFound from "./pages/NotFound";
+
+const queryClient = new QueryClient();
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <div className="flex flex-col min-h-screen">
+          <Header />
+          <main className="flex-1">
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/map" element={<PublicMap />} />
+              <Route path="/risk-gauge" element={<RiskGauge />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/faq" element={<FAQ />} />
+              
+              {/* Citizen Routes (Public access for reporting) */}
+              <Route path="/citizen/report" element={<CitizenReport />} />
+              <Route path="/citizen/alerts" element={<CitizenAlerts />} />
+              
+              {/* Authority Routes (Protected - Authority Only) */}
+              <Route 
+                path="/authority/dashboard" 
+                element={
+                  <ProtectedRoute requiredRole="authority">
+                    <AuthorityDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              {/* Catch-all route */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </main>
+          <Footer />
+        </div>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
+
+export default App;
