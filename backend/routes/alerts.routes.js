@@ -60,6 +60,75 @@ router.get('/active', async (req, res) => {
   }
 });
 
+// POST /api/cap-alerts/create - Simple create alert (Authority only)
+router.post('/create', async (req, res) => {
+  try {
+    const { 
+      eventType, 
+      area, 
+      severity, 
+      urgency, 
+      message, 
+      headline,
+      latitude,
+      longitude,
+      radius,
+      sourceAgency 
+    } = req.body;
+
+    console.log('📢 Creating new alert:', { eventType, area, severity });
+
+    // Validate required fields
+    if (!eventType || !area || !severity || !message) {
+      return res.status(400).json({ 
+        error: 'Missing required fields: eventType, area, severity, message' 
+      });
+    }
+
+    // Generate unique alert ID
+    const alertId = `alert-${Date.now()}`;
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
+
+    // Insert into database
+    const { data, error } = await global.supabase
+      .from('cap_alerts')
+      .insert([{
+        alert_id: alertId,
+        event_type: eventType,
+        area: area,
+        severity: severity,
+        urgency: urgency || 'Immediate',
+        message: message,
+        polygon: null,
+        source_agency: sourceAgency || 'Disaster Management Authority',
+        valid_from: new Date().toISOString(),
+        expires_at: expiresAt,
+        broadcast_channels: ['push', 'web'],
+        active: true
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Database insert error:', error);
+      return res.status(500).json({ error: 'Failed to create alert' });
+    }
+
+    console.log('✅ Alert created successfully:', alertId);
+
+    res.status(201).json({
+      success: true,
+      alertId: alertId,
+      alert: data,
+      message: 'Alert created and broadcasted successfully'
+    });
+
+  } catch (error) {
+    console.error('Error in POST /api/cap-alerts/create:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // POST /api/cap-alerts - Ingest CAP XML alert (Authority only)
 router.post('/', async (req, res) => {
   try {

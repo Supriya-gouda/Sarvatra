@@ -62,21 +62,29 @@ router.get('/data', async (req, res) => {
       createdAt: new Date(report.created_at).getTime()
     })) || [];
 
-    // Format active alerts
+    // Format active alerts with location data
     const formattedAlerts = activeAlerts?.map(alert => ({
+      id: alert.alert_id || alert.id,
       alertId: alert.alert_id,
       eventType: alert.event_type,
+      event_type: alert.event_type,
       area: alert.area,
       severity: alert.severity,
+      headline: alert.headline || alert.event_type,
+      description: alert.message || alert.description || '',
       message: alert.message,
+      // Use actual coordinates if available, otherwise use mock location
+      latitude: alert.latitude || 19.0760,
+      longitude: alert.longitude || 72.8777,
       createdAt: new Date(alert.created_at).getTime()
     })) || [];
 
     // Get map data (pins for reports and alerts)
     const alertPins = activeAlerts?.map(alert => ({
+      id: alert.alert_id || alert.id,
       alertId: alert.alert_id,
-      latitude: 19.0760, // Mock location
-      longitude: 72.8777,
+      latitude: alert.latitude || 19.0760, // Use actual or mock location
+      longitude: alert.longitude || 72.8777,
       type: 'alert'
     })) || [];
 

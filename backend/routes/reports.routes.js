@@ -12,15 +12,21 @@ const upload = multer({
 // POST /api/reports - Submit new citizen report
 router.post('/', upload.single('photo'), async (req, res) => {
   try {
+    console.log('📝 Report submission received');
+    console.log('Body:', req.body);
+    console.log('File:', req.file ? 'Yes' : 'No');
+    
     const { disasterType, name, phone, latitude, longitude, description } = req.body;
 
     // Validate required fields
     if (!disasterType || !latitude || !longitude || !description) {
+      console.log('❌ Validation failed:', { disasterType, latitude, longitude, description });
       return res.status(400).json({ 
         error: 'Missing required fields: disasterType, latitude, longitude, description' 
       });
     }
 
+    console.log('✅ Validation passed');
     let photoUrl = null;
 
     // Upload photo to Supabase Storage if provided
@@ -49,9 +55,20 @@ router.post('/', upload.single('photo'), async (req, res) => {
 
     if (process.env.AI_SERVICE_URL) {
       try {
+        // Generate temporary reportId for AI analysis
+        const tempReportId = `temp-${Date.now()}`;
+        
+        console.log('🤖 Calling AI service with:', { 
+          reportId: tempReportId,
+          disasterType, 
+          textLength: description.length,
+          hasPhoto: !!photoUrl 
+        });
+        
         const aiResponse = await axios.post(
           `${process.env.AI_SERVICE_URL}/api/filter`,
           {
+            reportId: tempReportId,
             text: description,
             photoUrl: photoUrl,
             latitude: parseFloat(latitude),
@@ -64,7 +81,11 @@ router.post('/', upload.single('photo'), async (req, res) => {
         trustScore = aiResponse.data.trustScore || aiResponse.data.trust_score;
         trustTag = aiResponse.data.trustTag || aiResponse.data.trust_tag || 'unverified';
         
-        console.log('✅ AI Filter Response:', { trustScore, trustTag });
+        console.log('✅ AI Filter Response:', { 
+          trustScore, 
+          trustTag,
+          reasoning: aiResponse.data.reasoning 
+        });
       } catch (aiError) {
         console.error('⚠️ AI service error (using defaults):', aiError.message);
         // Use default values if AI service fails
